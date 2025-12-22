@@ -1,7 +1,7 @@
 {
-  "buildCommand": "./build.sh",
+  "installCommand": "sh -c 'curl https://sh.rustup.rs -sSf|sh -s -- -y --default-toolchain nightly-2025-01-07' && . $HOME/.cargo/env && sh -c 'curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf|sh' && cargo install just && corepack enable && yarn install",
+  "buildCommand": "source \"$HOME/.cargo/env\" && just build && (cd packages/web-wallet && yarn build)",
   "outputDirectory": "packages/web-wallet/dist",
-  "installCommand": "echo 'Skipping default install - handled in build script'",
   "framework": null,
   "rewrites": [
     {
