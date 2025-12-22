@@ -4,12 +4,24 @@ set -e
 # Navigate to repo root (two levels up from packages/web-wallet)
 cd "$(dirname "$0")/../.."
 
-echo "Installing Rust..."
-CARGO_HOME=/root/.cargo RUSTUP_HOME=/root/.rustup curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-01-07
-source /root/.cargo/env
+# Determine cargo home - use /root in Vercel, $HOME locally
+if [ "$VERCEL" = "1" ] || [ -d "/root" ]; then
+  CARGO_HOME="/root/.cargo"
+  RUSTUP_HOME="/root/.rustup"
+else
+  CARGO_HOME="${HOME}/.cargo"
+  RUSTUP_HOME="${HOME}/.rustup"
+fi
+
+echo "Installing Rust (CARGO_HOME=$CARGO_HOME)..."
+CARGO_HOME="$CARGO_HOME" RUSTUP_HOME="$RUSTUP_HOME" curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-01-07
+export PATH="$CARGO_HOME/bin:$PATH"
+if [ -f "$CARGO_HOME/env" ]; then
+  source "$CARGO_HOME/env"
+fi
 
 echo "Installing wasm-pack..."
-curl -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
+CARGO_HOME="$CARGO_HOME" curl -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh | sh
 
 echo "Installing Just..."
 cargo install just
