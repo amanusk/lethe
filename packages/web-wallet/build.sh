@@ -16,32 +16,58 @@ fi
 echo "Installing Rust (CARGO_HOME=$CARGO_HOME)..."
 CARGO_HOME="$CARGO_HOME" RUSTUP_HOME="$RUSTUP_HOME" curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-01-07
 
-# Set PATH immediately after Rust installation
-export PATH="$CARGO_HOME/bin:$PATH"
+# Set environment variables
 export CARGO_HOME="$CARGO_HOME"
 export RUSTUP_HOME="$RUSTUP_HOME"
+export PATH="$CARGO_HOME/bin:$PATH"
 
-# Source the env file if it exists
+# Source the env file - it should exist after rustup installation
 if [ -f "$CARGO_HOME/env" ]; then
   source "$CARGO_HOME/env"
+elif [ -f "/root/.cargo/env" ]; then
+  # Fallback: try /root/.cargo/env directly
+  source "/root/.cargo/env"
 fi
 
-# Verify Rust is accessible
-if ! command -v rustc &> /dev/null; then
-  echo "Error: rustc not found in PATH"
-  echo "PATH: $PATH"
+# Verify Rust installation by checking if binaries exist
+if [ ! -f "$CARGO_HOME/bin/rustc" ] && [ ! -f "$CARGO_HOME/bin/cargo" ]; then
+  echo "Error: Rust binaries not found in $CARGO_HOME/bin"
+  echo "Listing $CARGO_HOME/bin:"
+  ls -la "$CARGO_HOME/bin" || echo "Directory does not exist"
   exit 1
 fi
 
+# Use direct path to cargo to avoid PATH issues
+CARGO_BIN="$CARGO_HOME/bin/cargo"
+if [ ! -f "$CARGO_BIN" ]; then
+  echo "Error: cargo not found in $CARGO_HOME/bin"
+  echo "Listing $CARGO_HOME/bin:"
+  ls -la "$CARGO_HOME/bin" || echo "Directory does not exist"
+  exit 1
+fi
+
+# Verify rustc exists
+if [ ! -f "$CARGO_HOME/bin/rustc" ]; then
+  echo "Error: rustc not found in $CARGO_HOME/bin"
+  echo "PATH: $PATH"
+  echo "CARGO_HOME: $CARGO_HOME"
+  ls -la "$CARGO_HOME/bin" || echo "Directory does not exist"
+  exit 1
+fi
+
+echo "Rust installation verified. Using cargo from $CARGO_BIN"
+
 echo "Installing wasm-pack..."
-# Install wasm-pack via cargo instead of the installer script to avoid PATH issues
-cargo install wasm-pack
+# Install wasm-pack via cargo using direct path
+"$CARGO_BIN" install wasm-pack
 
 echo "Installing Just..."
-cargo install just
+# Install just using direct path
+"$CARGO_BIN" install just
 
 echo "Building Rust WASM modules..."
-just build
+# Use just from cargo bin directory
+"$CARGO_HOME/bin/just" build || just build
 
 echo "Installing Node.js dependencies..."
 corepack enable
