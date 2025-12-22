@@ -1,8 +1,8 @@
 [build]
-  # Use the build script that handles Rust, wasm-pack, Just, and Node setup
+  # Use the build script in this directory which navigates to repo root
   command = "bash build.sh"
-  # The output directory where the built web wallet is located
-  publish = "packages/web-wallet/dist"
+  # The output directory relative to this directory (web-wallet)
+  publish = "dist"
 
 [build.environment]
   # Node.js version (Netlify will use this if available)
