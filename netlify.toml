@@ -1,4 +1,7 @@
 [build]
+  # Disable Netlify's automatic dependency installation
+  # build.sh handles everything: Rust, wasm-pack, Just, and yarn install
+  installCommand = "echo 'Skipping Netlify install - handled in build.sh'"
   # Build command matching GitHub Actions workflow approach
   # GitHub Actions uses: just build, then yarn web-wallet:build
   # But we need to install Rust/wasm-pack/Just first, so use build.sh
