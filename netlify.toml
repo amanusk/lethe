@@ -1,0 +1,42 @@
+[build]
+  # Use the build script that handles Rust, wasm-pack, Just, and Node setup
+  command = "bash build.sh"
+  # The output directory where the built web wallet is located
+  publish = "packages/web-wallet/dist"
+
+[build.environment]
+  # Node.js version (Netlify will use this if available)
+  NODE_VERSION = "18"
+  # Enable corepack for yarn
+  ENABLE_COREPACK = "1"
+  # Rust toolchain version (Netlify may install this automatically, but build.sh handles it)
+  RUST_VERSION = "nightly-2025-01-07"
+
+# SPA routing - redirect all routes to index.html for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Optional: Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache WASM files
+[[headers]]
+  for = "/*.wasm"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "application/wasm"
+
