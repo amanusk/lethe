@@ -1,6 +1,6 @@
 {
-  "installCommand": "sh -c 'curl https://sh.rustup.rs -sSf|sh -s -- -y --default-toolchain nightly-2025-01-07' && . $HOME/.cargo/env && sh -c 'curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf|sh' && cargo install just && corepack enable && yarn install",
-  "buildCommand": "source \"$HOME/.cargo/env\" && just build && (cd packages/web-wallet && yarn build)",
+  "installCommand": "HOME=/root curl -sSf https://sh.rustup.rs|sh -s -y --default-toolchain nightly-2025-01-07 && . /root/.cargo/env && HOME=/root curl -sSf https://rustwasm.github.io/wasm-pack/installer/init.sh|sh && /root/.cargo/bin/cargo install just && corepack enable",
+  "buildCommand": ". /root/.cargo/env && /root/.cargo/bin/just build && yarn install && (cd packages/web-wallet && yarn build)",
   "outputDirectory": "packages/web-wallet/dist",
   "framework": null,
   "rewrites": [
