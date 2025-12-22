@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from '../App';
 import ProtectedRoute from '../components/ProtectedRoute/ProtectedRoute';
 import Home from '../pages/Home';
@@ -26,6 +26,7 @@ const router = createBrowserRouter([
           </ProtectedRoute>
         ),
         children: [
+          { index: true, element: <Navigate to="shielded-transfer" replace /> },
           { path: 'account-summary', element: <AccountSummary /> },
           { path: 'transfer-balance', element: <TransferBalance /> },
           { path: 'shield-balance', element: <ShieldBalance /> },

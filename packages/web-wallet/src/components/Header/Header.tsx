@@ -17,11 +17,9 @@ const Header = (): React.JSX.Element => {
           />
           <div className="w-full max-w-[260px]">
             <div className="text-lg font-semibold leading-tight text-white">
-              Zcash Web Wallet
+              Lethe
             </div>
-            {!isHomePage && (
-              <div className="text-xs text-gray-400">Locally managed wallet</div>
-            )}
+            <div className="text-xs text-gray-400">Shielded STRK transfers via Zcash</div>
           </div>
         </div>
       </Link>

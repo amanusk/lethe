@@ -16,7 +16,7 @@ const Home: React.FC = () => {
       try {
         const accountData = await getAccountData();
         if (accountData?.unifiedAddress) {
-          navigate('/dashboard/account-summary');
+          navigate('/dashboard/shielded-transfer');
           return;
         }
         dispatch({
@@ -76,11 +76,10 @@ const Home: React.FC = () => {
         <div className="flex flex-col items-start space-y-8">
           <img src={ZcashYellowPNG} className="w-10 h-10" alt="Zcash Logo" />
           <h1 className="font-inter font-semibold text-[5rem] leading-[5rem] we text-white">
-            Zcash <br />
-            Web Wallet
+            Lethe
           </h1>
           <p className="font-inter text-gray-300">
-            Make shielded transfers from Starknet to Starknet via Zcash and Near intents
+            Shielded STRK transfers via zcash
           </p>
           {showResetInstructions && (
             <div className="w-full space-y-2 bg-red-900/30 border border-red-700 text-red-300 px-4 py-4 rounded-xl">
