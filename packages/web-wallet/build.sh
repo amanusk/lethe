@@ -14,7 +14,11 @@ else
 fi
 
 echo "Installing Rust (CARGO_HOME=$CARGO_HOME)..."
-CARGO_HOME="$CARGO_HOME" RUSTUP_HOME="$RUSTUP_HOME" curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-01-07
+# Set HOME to /root in Vercel so rustup installs to the right place
+if [ "$VERCEL" = "1" ] || [ -d "/root" ]; then
+  export HOME="/root"
+fi
+CARGO_HOME="$CARGO_HOME" RUSTUP_HOME="$RUSTUP_HOME" HOME="$HOME" curl -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-01-07
 
 # Set environment variables
 export CARGO_HOME="$CARGO_HOME"
@@ -29,12 +33,24 @@ elif [ -f "/root/.cargo/env" ]; then
   source "/root/.cargo/env"
 fi
 
-# Verify Rust installation by checking if binaries exist
+# Verify Rust installation - check both expected location and actual HOME location
 if [ ! -f "$CARGO_HOME/bin/rustc" ] && [ ! -f "$CARGO_HOME/bin/cargo" ]; then
-  echo "Error: Rust binaries not found in $CARGO_HOME/bin"
-  echo "Listing $CARGO_HOME/bin:"
-  ls -la "$CARGO_HOME/bin" || echo "Directory does not exist"
-  exit 1
+  # Fallback: check if rustup installed to actual HOME/.cargo
+  if [ -f "${HOME}/.cargo/bin/rustc" ] && [ -f "${HOME}/.cargo/bin/cargo" ]; then
+    echo "Rust found in ${HOME}/.cargo/bin, updating CARGO_HOME"
+    CARGO_HOME="${HOME}/.cargo"
+    RUSTUP_HOME="${HOME}/.rustup"
+    export CARGO_HOME="$CARGO_HOME"
+    export RUSTUP_HOME="$RUSTUP_HOME"
+    export PATH="$CARGO_HOME/bin:$PATH"
+  else
+    echo "Error: Rust binaries not found in $CARGO_HOME/bin or ${HOME}/.cargo/bin"
+    echo "Checking $CARGO_HOME/bin:"
+    ls -la "$CARGO_HOME/bin" 2>&1 || echo "Directory does not exist"
+    echo "Checking ${HOME}/.cargo/bin:"
+    ls -la "${HOME}/.cargo/bin" 2>&1 || echo "Directory does not exist"
+    exit 1
+  fi
 fi
 
 # Use direct path to cargo to avoid PATH issues
