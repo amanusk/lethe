@@ -1,0 +1,44 @@
+[build]
+  # Build command matching GitHub Actions workflow approach
+  # GitHub Actions uses: just build, then yarn web-wallet:build
+  # But we need to install Rust/wasm-pack/Just first, so use build.sh
+  command = "bash build.sh"
+  # Publish directory matches GitHub Actions: './packages/web-wallet/dist'
+  publish = "packages/web-wallet/dist"
+
+[build.environment]
+  # Node.js version (GitHub Actions uses lts/*, we'll use 18 to match package.json)
+  NODE_VERSION = "18"
+  # Enable corepack for yarn (GitHub Actions runs: corepack enable)
+  ENABLE_COREPACK = "1"
+  # Rust toolchain (build.sh handles installation)
+  RUST_VERSION = "nightly-2025-01-07"
+
+# SPA routing - redirect all routes to index.html for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Optional: Headers for security and performance
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache WASM files
+[[headers]]
+  for = "/*.wasm"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+    Content-Type = "application/wasm"
+
