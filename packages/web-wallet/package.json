@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "node server.js",
-    "build": "parcel build index.html --dist-dir dist"
+    "build": "parcel build index.html --dist-dir dist && node -e \"try { require('fs').copyFileSync('_headers', 'dist/_headers'); } catch(e) {}\""
   },
   "dependencies": {
     "@chainsafe/webzjs-keys": "workspace:^",
