@@ -1,0 +1,13 @@
+{
+  "buildCommand": "./build.sh",
+  "outputDirectory": "dist",
+  "installCommand": "echo 'Skipping default install - handled in build script'",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+
