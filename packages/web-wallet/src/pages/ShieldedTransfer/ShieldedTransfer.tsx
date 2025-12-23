@@ -18,6 +18,9 @@ import type { StarknetWindowObject } from '@starknet-io/get-starknet-core';
 // Transaction fee in zatoshis (0.00015 ZEC)
 const TRANSACTION_FEE_ZATOSHIS = 15000;
 
+// Minimum STRK amount for shielded transfers
+const MIN_STRK_AMOUNT = 40;
+
 // Asset identifiers for Near Intents
 const STARKNET_ASSET = 'nep141:starknet.omft.near';
 const ZEC_ASSET = 'nep141:zec.omft.near';
@@ -488,6 +491,10 @@ function ShieldedTransfer(): React.JSX.Element {
       setStrkAmountError('Amount must be a positive number');
       return false;
     }
+    if (numAmount < MIN_STRK_AMOUNT) {
+      setStrkAmountError(`Minimum transfer amount is ${MIN_STRK_AMOUNT} STRK`);
+      return false;
+    }
     setStrkAmountError('');
     return true;
   };
@@ -875,7 +882,8 @@ function ShieldedTransfer(): React.JSX.Element {
                 !!starknetAddressError ||
                 !!senderStarknetAddressError ||
                 !!strkAmountError ||
-                monitoringActive
+                monitoringActive ||
+                (strkAmount && parseFloat(strkAmount) < MIN_STRK_AMOUNT)
               }
             />
           </div>
