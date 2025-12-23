@@ -167,3 +167,28 @@ export async function submitTxHash(
   }
 }
 
+/**
+ * Get execution status of an intent
+ * @param depositAddress - Deposit address from the quote (destination address for second leg)
+ * @returns Status response with status, swapDetails, and other information
+ */
+export async function getExecutionStatus(depositAddress: string) {
+  try {
+    console.log('[NearIntents] Checking execution status:', {
+      depositAddress,
+    });
+
+    const statusResponse = await OneClickService.getExecutionStatus(depositAddress);
+    
+    console.log('[NearIntents] Execution status response:', {
+      status: statusResponse.status,
+      depositAddress,
+    });
+    
+    return statusResponse;
+  } catch (error) {
+    console.error('[NearIntents] Error checking execution status:', error);
+    throw error;
+  }
+}
+

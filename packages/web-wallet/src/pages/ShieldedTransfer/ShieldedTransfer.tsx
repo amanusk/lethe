@@ -5,7 +5,7 @@ import { useWebZjsContext } from '../../context/WebzjsContext';
 import { useStarknetWallet } from '../../context/StarknetWalletContext';
 import useBalance from '../../hooks/useBalance';
 import { zatsToZec, strkToSmallestUnit } from '../../utils';
-import { getQuote, QuoteResponse, submitTxHash } from '../../services/nearIntents';
+import { getQuote, QuoteResponse, submitTxHash, getExecutionStatus } from '../../services/nearIntents';
 import PageHeading from '../../components/PageHeading/PageHeading';
 import Loader from '../../components/Loader/Loader';
 import Input from '../../components/Input/Input';
@@ -17,6 +17,9 @@ import type { StarknetWindowObject } from '@starknet-io/get-starknet-core';
 
 // Transaction fee in zatoshis (0.00015 ZEC)
 const TRANSACTION_FEE_ZATOSHIS = 15000;
+
+// Minimum STRK amount for shielded transfers
+const MIN_STRK_AMOUNT = 40;
 
 // Asset identifiers for Near Intents
 const STARKNET_ASSET = 'nep141:starknet.omft.near';
@@ -34,6 +37,8 @@ enum ShieldedTransferStatus {
   READY_TO_SEND = 'ready_to_send',
   TRANSFERRING = 'transferring',
   COMPLETE = 'complete',
+  WAITING_INTENT = 'waiting_intent',
+  INTENT_SUCCESS = 'intent_success',
   ERROR = 'error',
 }
 
@@ -61,6 +66,7 @@ function ShieldedTransfer(): React.JSX.Element {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [availableWallets, setAvailableWallets] = useState<StarknetWindowObject[]>([]);
   const [loadingWallets, setLoadingWallets] = useState(false);
+  const [intentStatus, setIntentStatus] = useState<any>(null);
 
   const { getAccountData, triggerRescan } = useWebZjsActions();
   const { handlePcztTransaction, pcztTransferStatus } = usePczt();
@@ -383,6 +389,59 @@ function ShieldedTransfer(): React.JSX.Element {
     }
   }, [pcztTransferStatus, status, transactionHash, secondQuote]);
 
+  // Auto-transition from COMPLETE to WAITING_INTENT after 3 seconds
+  useEffect(() => {
+    if (status === ShieldedTransferStatus.COMPLETE && secondQuote?.quote?.depositAddress) {
+      const timer = setTimeout(() => {
+        console.log('[ShieldedTransfer] Transitioning to waiting intent status...');
+        setStatus(ShieldedTransferStatus.WAITING_INTENT);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [status, secondQuote]);
+
+  // Poll intent status when in WAITING_INTENT status
+  useInterval(
+    async () => {
+      if (status !== ShieldedTransferStatus.WAITING_INTENT) {
+        return;
+      }
+
+      if (!secondQuote?.quote?.depositAddress) {
+        console.warn('[ShieldedTransfer] Cannot poll status - missing deposit address');
+        return;
+      }
+
+      try {
+        console.log('[ShieldedTransfer] Polling intent status...', {
+          depositAddress: secondQuote.quote.depositAddress,
+        });
+
+        const statusResponse = await getExecutionStatus(secondQuote.quote.depositAddress);
+        const currentStatus = statusResponse.status;
+
+        console.log('[ShieldedTransfer] Intent status:', currentStatus);
+
+        setIntentStatus(statusResponse);
+
+        if (currentStatus === 'SUCCESS') {
+          console.log('[ShieldedTransfer] Intent fulfilled successfully!');
+          setStatus(ShieldedTransferStatus.INTENT_SUCCESS);
+        } else if (currentStatus === 'REFUNDED') {
+          console.log('[ShieldedTransfer] Intent refunded');
+          setQuoteError(`Swap failed: ${currentStatus}. Refunded amount: ${statusResponse.swapDetails?.refundedAmountFormatted || '0'}`);
+          setStatus(ShieldedTransferStatus.ERROR);
+        }
+        // Otherwise continue polling
+      } catch (error) {
+        console.error('[ShieldedTransfer] Error checking intent status:', error);
+        // Continue polling even on error
+      }
+    },
+    status === ShieldedTransferStatus.WAITING_INTENT ? 10000 : null,
+  );
+
   // Monitor console logs to extract transaction hash
   useEffect(() => {
     if (status === ShieldedTransferStatus.TRANSFERRING) {
@@ -486,6 +545,10 @@ function ShieldedTransfer(): React.JSX.Element {
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       setStrkAmountError('Amount must be a positive number');
+      return false;
+    }
+    if (numAmount < MIN_STRK_AMOUNT) {
+      setStrkAmountError(`Minimum transfer amount is ${MIN_STRK_AMOUNT} STRK`);
       return false;
     }
     setStrkAmountError('');
@@ -766,6 +829,7 @@ function ShieldedTransfer(): React.JSX.Element {
     setDepositAddress('');
     setTransactionHash(null);
     setQuoteError('');
+    setIntentStatus(null);
     transferTriggeredRef.current = false;
   };
 
@@ -875,7 +939,8 @@ function ShieldedTransfer(): React.JSX.Element {
                 !!starknetAddressError ||
                 !!senderStarknetAddressError ||
                 !!strkAmountError ||
-                monitoringActive
+                monitoringActive ||
+                (strkAmount && parseFloat(strkAmount) < MIN_STRK_AMOUNT)
               }
             />
           </div>
@@ -915,6 +980,11 @@ function ShieldedTransfer(): React.JSX.Element {
               />
             </div>
           </TransactionStatusCard>
+          {status !== ShieldedTransferStatus.INTENT_SUCCESS && (
+            <div className="text-white text-xs font-normal font-['Roboto'] mt-4 text-center">
+              Do not close this browser page until the process is complete
+            </div>
+          )}
         </div>
       )}
 
@@ -951,6 +1021,11 @@ function ShieldedTransfer(): React.JSX.Element {
             </div>
             <Button onClick={handleReset} label="Cancel" variant="secondary" />
           </TransactionStatusCard>
+          {status !== ShieldedTransferStatus.INTENT_SUCCESS && (
+            <div className="text-white text-xs font-normal font-['Roboto'] mt-4 text-center">
+              Do not close this browser page until the process is complete
+            </div>
+          )}
         </div>
       )}
 
@@ -965,6 +1040,11 @@ function ShieldedTransfer(): React.JSX.Element {
               Preparing to send to {starknetAddress.substring(0, 20)}...
             </div>
           </TransactionStatusCard>
+          {status !== ShieldedTransferStatus.INTENT_SUCCESS && (
+            <div className="text-white text-xs font-normal font-['Roboto'] mt-4 text-center">
+              Do not close this browser page until the process is complete
+            </div>
+          )}
         </div>
       )}
 
@@ -994,6 +1074,11 @@ function ShieldedTransfer(): React.JSX.Element {
             </div>
             <Button onClick={handleForceSend} label="Force Send" />
           </TransactionStatusCard>
+          {status !== ShieldedTransferStatus.INTENT_SUCCESS && (
+            <div className="text-white text-xs font-normal font-['Roboto'] mt-4 text-center">
+              Do not close this browser page until the process is complete
+            </div>
+          )}
         </div>
       )}
 
@@ -1026,6 +1111,11 @@ function ShieldedTransfer(): React.JSX.Element {
               </div>
             )}
           </TransactionStatusCard>
+          {status !== ShieldedTransferStatus.INTENT_SUCCESS && (
+            <div className="text-white text-xs font-normal font-['Roboto'] mt-4 text-center">
+              Do not close this browser page until the process is complete
+            </div>
+          )}
         </div>
       )}
 
@@ -1050,6 +1140,92 @@ function ShieldedTransfer(): React.JSX.Element {
                 </div>
               </div>
             )}
+            <div className="text-gray-400 text-sm font-normal font-['Roboto'] mt-4">
+              Waiting for intent to complete...
+            </div>
+          </TransactionStatusCard>
+          {status !== ShieldedTransferStatus.INTENT_SUCCESS && (
+            <div className="text-white text-xs font-normal font-['Roboto'] mt-4 text-center">
+              Do not close this browser page until the process is complete
+            </div>
+          )}
+        </div>
+      )}
+
+      {status === ShieldedTransferStatus.WAITING_INTENT && (
+        <div className="max-w-[1000px] p-9 bg-gray-900 rounded-3xl border border-gray-700 flex-col justify-start items-center gap-9 inline-flex">
+          <TransactionStatusCard
+            headText="Waiting for Intent"
+            statusMessage="Waiting for Near Intent to complete and transfer to Starknet..."
+            icon={<Loader />}
+          >
+            {transactionHash && (
+              <div className="mt-4 p-3 bg-gray-800 rounded-xl border border-gray-700 w-full">
+                <div className="text-gray-400 text-sm font-normal font-['Roboto'] mb-2">
+                  Transaction Hash:
+                </div>
+                <div className="text-white text-sm font-mono break-all">
+                  {transactionHash}
+                </div>
+              </div>
+            )}
+            {secondQuote?.quote?.depositAddress && (
+              <div className="mt-4 w-full flex flex-col gap-2">
+                <a
+                  href={`https://explorer.near-intents.org/transactions/${secondQuote.quote.depositAddress}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-sm font-normal font-['Roboto'] underline"
+                >
+                  View on Near Intents Explorer
+                </a>
+                <div className="text-gray-400 text-xs font-normal font-['Roboto'] mt-2">
+                  Checking status every 10 seconds...
+                </div>
+              </div>
+            )}
+            {intentStatus && (
+              <div className="mt-4 text-gray-400 text-sm font-normal font-['Roboto']">
+                Current status: {intentStatus.status}
+              </div>
+            )}
+          </TransactionStatusCard>
+          {status !== ShieldedTransferStatus.INTENT_SUCCESS && (
+            <div className="text-white text-xs font-normal font-['Roboto'] mt-4 text-center">
+              Do not close this browser page until the process is complete
+            </div>
+          )}
+        </div>
+      )}
+
+      {status === ShieldedTransferStatus.INTENT_SUCCESS && (
+        <div className="max-w-[1000px] p-9 bg-gray-900 rounded-3xl border border-gray-700 flex-col justify-start items-center gap-9 inline-flex">
+          <TransactionStatusCard
+            headText="Transfer Complete"
+            statusMessage={
+              intentStatus?.swapDetails?.amountOutFormatted
+                ? `Successfully transferred ${intentStatus.swapDetails.amountOutFormatted} STRK to ${starknetAddress.substring(0, 20)}...`
+                : secondQuote?.quote?.amountOutFormatted
+                  ? `Successfully transferred ${secondQuote.quote.amountOutFormatted} STRK to ${starknetAddress.substring(0, 20)}...`
+                  : 'Intent fulfilled successfully!'
+            }
+            icon={<CheckSVG />}
+          >
+            {intentStatus?.swapDetails?.amountOutFormatted && (
+              <div className="mt-4 p-3 bg-gray-800 rounded-xl border border-gray-700 w-full">
+                <div className="text-gray-400 text-sm font-normal font-['Roboto'] mb-2">
+                  Amount Transferred:
+                </div>
+                <div className="text-white text-lg font-medium font-['Roboto']">
+                  {intentStatus.swapDetails.amountOutFormatted} STRK
+                </div>
+                {intentStatus.swapDetails.amountOutUsd && (
+                  <div className="text-gray-400 text-xs font-normal font-['Roboto'] mt-1">
+                    ≈ ${intentStatus.swapDetails.amountOutUsd} USD
+                  </div>
+                )}
+              </div>
+            )}
             {secondQuote?.quote?.depositAddress && (
               <div className="mt-4 w-full">
                 <a
@@ -1060,6 +1236,16 @@ function ShieldedTransfer(): React.JSX.Element {
                 >
                   View on Near Intents Explorer
                 </a>
+              </div>
+            )}
+            {transactionHash && (
+              <div className="mt-4 p-3 bg-gray-800 rounded-xl border border-gray-700 w-full">
+                <div className="text-gray-400 text-sm font-normal font-['Roboto'] mb-2">
+                  Transaction Hash:
+                </div>
+                <div className="text-white text-sm font-mono break-all">
+                  {transactionHash}
+                </div>
               </div>
             )}
             <Button onClick={handleReset} label="Start Over" variant="secondary" />
