@@ -5,6 +5,8 @@ import ZcashBrandmarkPNG from './zcash-brandmark.png';
 import NearIconPNG from './near-icon.png';
 import StarknetSymbolPNG from './starknet-symbol.png';
 import StarknetStackedPNG from './starknet-stacked.png';
+import LetheFaviconPNG from './lethe_favicon.png';
+import LetheLogoPNG from './lethe_logo_nobackground.png';
 
 // Icons
 import ArrowReceiveSvg from './icons/arrow-receive.svg';
@@ -30,6 +32,8 @@ export {
   FormTransferSvg,
   StarknetSymbolPNG,
   StarknetStackedPNG,
+  LetheFaviconPNG,
+  LetheLogoPNG,
   ArrowReceiveSvg,
   ArrowTransferSvg,
   ClockSvg,

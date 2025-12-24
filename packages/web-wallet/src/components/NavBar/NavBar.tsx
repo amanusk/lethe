@@ -7,6 +7,7 @@ import {
   ArrowTransferSvg,
   SummarySvg,
   ShieldSvg,
+  CoinsSvg,
 } from '../../assets';
 
 interface NavItem {
@@ -35,6 +36,11 @@ const navItems: NavItem[] = [
     to: 'receive',
     label: 'Receive',
     icon: <ArrowReceiveSvg />,
+  },
+  {
+    to: 'swap',
+    label: 'Swap',
+    icon: <CoinsSvg />,
   },
 ];
 
