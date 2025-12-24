@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ZcashYellowPNG, StarknetSymbolPNG, NearIconPNG, ZcashBrandmarkPNG } from '../assets';
+import { LetheLogoPNG, StarknetSymbolPNG, NearIconPNG, ZcashBrandmarkPNG } from '../assets';
 import { useNavigate } from 'react-router-dom';
 import { useWebZjsContext } from '../context/WebzjsContext';
 import { useWebZjsActions } from '../hooks';
@@ -74,7 +74,7 @@ const Home: React.FC = () => {
           </div>
         </div>
         <div className="flex flex-col items-start space-y-8">
-          <img src={ZcashYellowPNG} className="w-10 h-10" alt="Zcash Logo" />
+          <img src={LetheLogoPNG} className="w-45 h-65" alt="Lethe Logo" />
           <h1 className="font-inter font-semibold text-[5rem] leading-[5rem] we text-white">
             Lethe
           </h1>

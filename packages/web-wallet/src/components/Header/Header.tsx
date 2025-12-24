@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ZcashPNG } from '../../assets';
+import { LetheLogoPNG } from '../../assets';
 
 const Header = (): React.JSX.Element => {
   const location = useLocation();
@@ -11,9 +11,9 @@ const Header = (): React.JSX.Element => {
       <Link to={'/'}>
         <div className="flex items-center">
           <img
-            src={ZcashPNG}
-            className="w-[25px] h-[25px] mr-3"
-            alt="Zcash logo"
+            src={LetheLogoPNG}
+            className="w-[60px] h-[60px] mr-3"
+            alt="Lethe logo"
           />
           <div className="w-full max-w-[260px]">
             <div className="text-lg font-semibold leading-tight text-white">
