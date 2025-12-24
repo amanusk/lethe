@@ -4,6 +4,7 @@ import React, {
   useReducer,
   useEffect,
   useCallback,
+  useState,
 } from 'react';
 import { get, set, del } from 'idb-keyval';
 
@@ -15,6 +16,7 @@ import initWebzJSWallet, {
 import initWebzJSKeys, { generate_seed_phrase } from '@chainsafe/webzjs-keys';
 import { MAINNET_LIGHTWALLETD_PROXY } from '../config/constants';
 import toast, { Toaster } from 'react-hot-toast';
+import Disclaimer from '../components/Disclaimer/Disclaimer';
 
 const DEFAULT_ACCOUNT_INDEX = 0;
 const STORAGE_KEY_SEED_PHRASE = 'seedPhrase';
@@ -100,6 +102,17 @@ export function useWebZjsContext(): WebZjsContextType {
 
 export const WebZjsProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState<boolean | null>(null);
+
+  // Check disclaimer acceptance on mount
+  useEffect(() => {
+    const accepted = localStorage.getItem('disclaimer-accepted') === 'true';
+    setDisclaimerAccepted(accepted);
+  }, []);
+
+  const handleDisclaimerAccept = () => {
+    setDisclaimerAccepted(true);
+  };
 
   const initAll = useCallback(async () => {
     try {
@@ -247,9 +260,12 @@ export const WebZjsProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }, []);
 
+  // Only initialize if disclaimer is accepted
   useEffect(() => {
-    initAll().catch(console.error);
-  }, [initAll]);
+    if (disclaimerAccepted === true) {
+      initAll().catch(console.error);
+    }
+  }, [disclaimerAccepted, initAll]);
 
   useEffect(() => {
     if (state.error) {
@@ -275,6 +291,17 @@ export const WebZjsProvider = ({ children }: { children: React.ReactNode }) => {
     },
     [],
   );
+
+  // Show disclaimer if not yet accepted
+  if (disclaimerAccepted === null) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a]" />
+    ); // Loading state while checking localStorage
+  }
+
+  if (disclaimerAccepted === false) {
+    return <Disclaimer onAccept={handleDisclaimerAccept} />;
+  }
 
   return (
     <WebZjsContext.Provider value={{ state, dispatch, getSeedForAccount }}>
