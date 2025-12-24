@@ -74,9 +74,9 @@ const Home: React.FC = () => {
           </div>
         </div>
         <div className="flex flex-col items-start space-y-8">
-          <img src={LetheLogoPNG} className="w-45 h-65" alt="Lethe Logo" />
+          <img src={LetheLogoPNG} className="w-45 h-65" alt="lethe Logo" />
           <h1 className="font-inter font-semibold text-[5rem] leading-[5rem] we text-white">
-            Lethe
+            lethe
           </h1>
           <p className="font-inter text-gray-300">
             Shielded STRK transfers via zcash

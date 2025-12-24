@@ -13,11 +13,11 @@ const Header = (): React.JSX.Element => {
           <img
             src={LetheLogoPNG}
             className="w-[60px] h-[60px] mr-3"
-            alt="Lethe logo"
+            alt="lethe logo"
           />
           <div className="w-full max-w-[260px]">
             <div className="text-lg font-semibold leading-tight text-white">
-              Lethe
+              lethe
             </div>
             <div className="text-xs text-gray-400">Shielded STRK transfers via Zcash</div>
           </div>
